@@ -29,6 +29,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import SaveIcon from '@mui/icons-material/Save';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import pns from '../assets/pns_logo2.png';
 
 interface InvoiceItem {
   id: number;
@@ -46,7 +47,7 @@ function Invoice() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Logo
-  const [logo, setLogo] = useState<string | null>(null);
+  const [logo, setLogo] = useState<string | null>(pns);
 
   // Invoice Header
   const [invoiceNumber, setInvoiceNumber] = useState('023');
@@ -183,15 +184,17 @@ function Invoice() {
   };
 
   return (
-    <Box sx={{ padding: { xs: 2, md: 4 }, maxWidth: 1200, margin: '0 auto', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+    <Box sx={{ padding: { xs: 1, sm: 2, md: 4 }, maxWidth: 1200, margin: '0 auto', backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
       {/* Logo Upload Controls */}
-      <Paper elevation={2} sx={{ padding: 2, marginBottom: 3, backgroundColor: '#fff' }} className="no-print">
-        <Stack direction="row" alignItems="center" spacing={2}>
+      <Paper elevation={2} sx={{ padding: { xs: 1.5, sm: 2 }, marginBottom: { xs: 2, md: 3 }, backgroundColor: '#fff' }} className="no-print">
+        <Stack direction="row" alignItems="center" spacing={2} flexWrap="wrap">
           <Button
             variant="outlined"
             component="label"
             startIcon={<CloudUploadIcon />}
             size="small"
+            fullWidth={false}
+            sx={{ minWidth: { xs: '100%', sm: 'auto' } }}
           >
             Upload Logo
             <input
@@ -211,19 +214,12 @@ function Invoice() {
       </Paper>
 
       {/* Invoice Document */}
-      <Paper ref={invoiceRef} elevation={4} sx={{ padding: { xs: 3, md: 5 }, backgroundColor: '#ffffff' }}>
+      <Paper ref={invoiceRef} elevation={4} sx={{ padding: { xs: 2, sm: 3, md: 5 }, backgroundColor: '#ffffff' }}>
         {/* 1️⃣ Invoice Header Section */}
-        <Box sx={{ marginBottom: 4 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
-            <Box>
-              {logo && (
-                <Avatar 
-                  src={logo} 
-                  variant="square" 
-                  sx={{ width: 120, height: 120, marginBottom: 2, objectFit: 'contain' }} 
-                />
-              )}
-              <Typography variant="h3" fontWeight="700" color="primary.main" sx={{ letterSpacing: 1 }}>
+        <Box sx={{ marginBottom: { xs: 2, md: 4 } }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'center', sm: 'flex-start' }} flexWrap="wrap" gap={2}>
+            <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
+              <Typography variant="h3" fontWeight="700" color="primary.main" sx={{ letterSpacing: 1, fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
                 INVOICE
               </Typography>
               {isTaxInvoice && (
@@ -235,10 +231,17 @@ function Invoice() {
                 />
               )}
             </Box>
-            <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="h6" color="text.secondary" gutterBottom>
+            <Box sx={{ textAlign: { xs: 'center', sm: 'right' } }}>
+              <Typography variant="h6" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 Invoice #{invoiceNumber}
               </Typography>
+              {logo && (
+                <Avatar 
+                  src={logo} 
+                  variant="square" 
+                  sx={{ width: { xs: 80, sm: 100, md: 120 }, height: { xs: 80, sm: 100, md: 120 }, marginTop: 2, marginLeft: 'auto', objectFit: 'contain' }} 
+                />
+              )}
             </Box>
           </Stack>
           
@@ -264,52 +267,54 @@ function Invoice() {
               </Stack>
             </Stack>
           ) : (
-            <Stack direction="row" spacing={2} sx={{ marginTop: 3, flexWrap: 'wrap' }}>
+            <Stack spacing={2} sx={{ marginTop: { xs: 2, md: 3 } }}>
               <TextField
                 label="Invoice Number"
                 value={invoiceNumber}
                 onChange={(e) => setInvoiceNumber(e.target.value)}
                 size="small"
-                sx={{ flex: '1 1 200px', minWidth: '150px' }}
+                fullWidth
                 variant="outlined"
               />
-              <TextField
-                label="Issue Date"
-                type="date"
-                value={issueDate}
-                onChange={(e) => setIssueDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ flex: '1 1 200px', minWidth: '150px' }}
-                variant="outlined"
-              />
-              <TextField
-                label="Due Date"
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                size="small"
-                sx={{ flex: '1 1 200px', minWidth: '150px' }}
-                variant="outlined"
-              />
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  label="Issue Date"
+                  type="date"
+                  value={issueDate}
+                  onChange={(e) => setIssueDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  fullWidth
+                  variant="outlined"
+                />
+                <TextField
+                  label="Due Date"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                  size="small"
+                  fullWidth
+                  variant="outlined"
+                />
+              </Stack>
               <TextField
                 label="Payment Method"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 size="small"
-                sx={{ flex: '1 1 200px', minWidth: '150px' }}
+                fullWidth
                 variant="outlined"
               />
             </Stack>
           )}
         </Box>
 
-        <Divider sx={{ marginY: 4, borderColor: '#e0e0e0' }} />
+        <Divider sx={{ marginY: { xs: 2, md: 4 }, borderColor: '#e0e0e0' }} />
 
         {/* 2️⃣ Seller Details & 3️⃣ Client Details */}
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={4}>
-          <Box sx={{ flex: 1, padding: 2, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 4 }}>
+          <Box sx={{ flex: 1, padding: { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
             <Typography variant="overline" fontWeight="700" color="primary.main" gutterBottom>
               FROM
             </Typography>
@@ -336,7 +341,7 @@ function Invoice() {
             )}
           </Box>
 
-          <Box sx={{ flex: 1, padding: 2, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
+          <Box sx={{ flex: 1, padding: { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
             <Typography variant="overline" fontWeight="700" color="primary.main" gutterBottom>
               BILL TO
             </Typography>
@@ -389,27 +394,27 @@ function Invoice() {
         <Divider sx={{ marginY: 4, borderColor: '#e0e0e0' }} />
 
         {/* 4️⃣ Invoice Items Table */}
-        <Typography variant="h6" fontWeight="700" gutterBottom color="text.primary">
+        <Typography variant="h6" fontWeight="700" gutterBottom color="text.primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
           Items & Services
         </Typography>
-        <TableContainer sx={{ marginTop: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+        <TableContainer sx={{ marginTop: 2, border: '1px solid #e0e0e0', borderRadius: 1, overflowX: 'auto' }}>
           <Table>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
-                <TableCell sx={{ fontWeight: 700, color: 'text.primary' }}>Description</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary' }}>Quantity</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary' }}>Unit Price</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary' }}>Discount</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary' }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Description</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Qty</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Price</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Disc.</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Amount</TableCell>
                 {!isGeneratingPDF && (
-                  <TableCell align="center" sx={{ fontWeight: 700, color: 'text.primary' }}>Action</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Action</TableCell>
                 )}
               </TableRow>
             </TableHead>
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell>
+                  <TableCell sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
                     {isGeneratingPDF ? (
                       <Typography variant="body2">{item.description}</Typography>
                     ) : (
@@ -422,55 +427,55 @@ function Invoice() {
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2">{item.quantity}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.quantity}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.quantity}
                         onChange={(e) => handleItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: 80 }}
+                        sx={{ width: { xs: 60, sm: 80 } }}
                         inputProps={{ min: 0, step: 1 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2">${item.unitPrice.toFixed(2)}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>${item.unitPrice.toFixed(2)}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.unitPrice}
                         onChange={(e) => handleItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: 100 }}
+                        sx={{ width: { xs: 70, sm: 100 } }}
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2">${item.discount.toFixed(2)}</Typography>
+                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>${item.discount.toFixed(2)}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.discount}
                         onChange={(e) => handleItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: 100 }}
+                        sx={{ width: { xs: 70, sm: 100 } }}
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2" fontWeight="600" color="primary.main">
+                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                    <Typography variant="body2" fontWeight="600" color="primary.main" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       ${calculateItemAmount(item).toFixed(2)}
                     </Typography>
                   </TableCell>
                   {!isGeneratingPDF && (
-                    <TableCell align="center">
+                    <TableCell align="center" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
                       <IconButton
                         size="small"
                         color="error"
@@ -491,7 +496,7 @@ function Invoice() {
           <Button
             startIcon={<AddIcon />}
             onClick={handleAddItem}
-            sx={{ marginTop: 2 }}
+            sx={{ marginTop: 2, width: { xs: '100%', sm: 'auto' } }}
             variant="outlined"
             color="primary"
           >
@@ -504,10 +509,10 @@ function Invoice() {
         {/* 5️⃣ Subtotal & Tax + 6️⃣ Total Section */}
         <Stack direction="row" justifyContent="flex-end">
           <Box sx={{ 
-            padding: 3, 
+            padding: { xs: 2, sm: 3 }, 
             backgroundColor: '#f8f9fc', 
             borderRadius: 2, 
-            width: { xs: '100%', sm: '50%', md: '40%' },
+            width: { xs: '100%', sm: '70%', md: '50%', lg: '40%' },
             border: '2px solid #e0e0e0'
           }}>
             <Stack spacing={2}>
@@ -555,8 +560,8 @@ function Invoice() {
         <Divider sx={{ marginY: 4, borderColor: '#e0e0e0' }} />
 
         {/* 7️⃣ Bank / Payment Details */}
-        <Box sx={{ padding: 3, backgroundColor: '#f8f9fc', borderRadius: 2, border: '1px solid #e0e0e0' }}>
-          <Typography variant="h6" fontWeight="700" gutterBottom color="text.primary">
+        <Box sx={{ padding: { xs: 2, sm: 3 }, backgroundColor: '#f8f9fc', borderRadius: 2, border: '1px solid #e0e0e0' }}>
+          <Typography variant="h6" fontWeight="700" gutterBottom color="text.primary" sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
             Payment Information
           </Typography>
           <Stack spacing={2} sx={{ marginTop: 2 }}>
@@ -592,11 +597,11 @@ function Invoice() {
         <Divider sx={{ marginY: 4, borderColor: '#e0e0e0' }} />
 
         {/* 8️⃣ Footer Section */}
-        <Box sx={{ textAlign: 'center', marginTop: 4, paddingY: 3, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
-          <Typography variant="h6" color="primary" fontWeight="700" gutterBottom>
+        <Box sx={{ textAlign: 'center', marginTop: { xs: 2, md: 4 }, paddingY: { xs: 2, sm: 3 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
+          <Typography variant="h6" color="primary" fontWeight="700" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
             {thankYouMessage}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ marginTop: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ marginTop: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
             {businessName} • {phone} • {email}
           </Typography>
           {authorizedPerson && (
@@ -613,14 +618,15 @@ function Invoice() {
       </Paper>
 
       {/* Action Buttons */}
-      <Paper elevation={2} sx={{ marginTop: 3, padding: 2, backgroundColor: '#fff' }} className="no-print">
+      <Paper elevation={2} sx={{ marginTop: { xs: 2, md: 3 }, padding: { xs: 1.5, sm: 2 }, backgroundColor: '#fff' }} className="no-print">
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="center">
           <Button 
             variant="contained" 
             color="primary"
             startIcon={<DownloadIcon />}
             size="large"
-            sx={{ paddingX: 4 }}
+            fullWidth
+            sx={{ paddingX: 4, paddingY: { xs: 1.5, sm: 1 }, minHeight: 48 }}
             onClick={handleDownloadPDF}
           >
             Download PDF
@@ -630,7 +636,8 @@ function Invoice() {
             color="primary"
             startIcon={<PrintIcon />}
             size="large"
-            sx={{ paddingX: 4 }}
+            fullWidth
+            sx={{ paddingX: 4, paddingY: { xs: 1.5, sm: 1 }, minHeight: 48 }}
             onClick={handlePrint}
           >
             Print Invoice
@@ -639,7 +646,8 @@ function Invoice() {
             variant="outlined"
             startIcon={<SaveIcon />}
             size="large"
-            sx={{ paddingX: 4 }}
+            fullWidth
+            sx={{ paddingX: 4, paddingY: { xs: 1.5, sm: 1 }, minHeight: 48 }}
           >
             Save Draft
           </Button>
