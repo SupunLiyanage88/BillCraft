@@ -257,7 +257,6 @@ function Invoice() {
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1200, // Force consistent width across all devices
-        windowHeight: invoiceRef.current.scrollHeight,
       });
 
       // Use JPEG with compression instead of PNG
@@ -271,24 +270,22 @@ function Invoice() {
 
       const pageWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Handle multi-page PDFs if content is taller than one page
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Calculate dimensions to fit on single page
+      let imgWidth = pageWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-      
-      // Add additional pages if needed
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
+      // If content is taller than page, scale down to fit
+      if (imgHeight > pageHeight) {
+        const scaleFactor = pageHeight / imgHeight;
+        imgHeight = pageHeight;
+        imgWidth = imgWidth * scaleFactor;
       }
+      
+      // Center horizontally if scaled down
+      const xOffset = (pageWidth - imgWidth) / 2;
+      
+      pdf.addImage(imgData, 'JPEG', xOffset, 0, imgWidth, imgHeight, undefined, 'FAST');
       
       setIsGeneratingPDF(false);
       return pdf.output('blob');
@@ -313,7 +310,6 @@ function Invoice() {
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1200, // Force consistent width across all devices
-        windowHeight: invoiceRef.current.scrollHeight,
       });
 
       // Use JPEG with compression instead of PNG
@@ -327,25 +323,22 @@ function Invoice() {
 
       const pageWidth = 210; // A4 width in mm
       const pageHeight = 297; // A4 height in mm
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Handle multi-page PDFs if content is taller than one page
-      let heightLeft = imgHeight;
-      let position = 0;
+      // Calculate dimensions to fit on single page
+      let imgWidth = pageWidth;
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Add first page
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-      heightLeft -= pageHeight;
-      
-      // Add additional pages if needed
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
-        heightLeft -= pageHeight;
+      // If content is taller than page, scale down to fit
+      if (imgHeight > pageHeight) {
+        const scaleFactor = pageHeight / imgHeight;
+        imgHeight = pageHeight;
+        imgWidth = imgWidth * scaleFactor;
       }
       
+      // Center horizontally if scaled down
+      const xOffset = (pageWidth - imgWidth) / 2;
+      
+      pdf.addImage(imgData, 'JPEG', xOffset, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`Invoice-${invoiceHeaderData.invoiceNumber}.pdf`);
       
       // Auto-save invoice to history after download
