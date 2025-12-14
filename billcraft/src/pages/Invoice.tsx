@@ -1084,7 +1084,6 @@ function Invoice() {
           <Paper 
             ref={invoiceRef} 
             elevation={0}
-            className="animate-slideUp animate-delay-100"
             sx={{ 
               p: { xs: 2, sm: 4, md: 5, lg: 6 }, 
               backgroundColor: '#ffffff',
@@ -1102,7 +1101,6 @@ function Invoice() {
                 maxWidth: 'none',
                 p: 6,
                 borderRadius: 0,
-                animation: 'none',
               }),
             }}
           >
