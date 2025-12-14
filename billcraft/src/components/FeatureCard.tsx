@@ -28,15 +28,23 @@ function FeatureCard({
         borderRadius: 2,
         boxShadow: 'none',
         textAlign: 'center',
-        transition: 'transform 0.2s',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
-          transform: 'translateY(-4px)',
+          transform: 'translateY(-8px)',
+          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.08)',
+          borderColor: primaryColor,
+        },
+        '&:hover .feature-icon': {
+          transform: 'scale(1.1)',
+          backgroundColor: primaryColor,
+          color: '#fff',
         },
       }}
     >
       <CardContent sx={{ p: 4 }}>
         <Stack spacing={2} alignItems="center">
           <Box
+            className="feature-icon"
             sx={{
               width: 56,
               height: 56,
@@ -46,6 +54,7 @@ function FeatureCard({
               alignItems: 'center',
               justifyContent: 'center',
               color: primaryColor,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             {icon}

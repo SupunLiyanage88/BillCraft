@@ -33,10 +33,22 @@ function PrimaryButton({
         fontWeight: 600,
         textTransform: 'none',
         borderRadius: 2,
-        boxShadow: 'none',
+        boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
         '&:hover': {
           backgroundColor: '#1D4ED8',
-          boxShadow: 'none',
+          boxShadow: '0 6px 20px rgba(37, 99, 235, 0.35)',
+          transform: 'translateY(-2px)',
+        },
+        '&:active': {
+          transform: 'translateY(0)',
+          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.25)',
+        },
+        '& .MuiButton-endIcon': {
+          transition: 'transform 0.3s ease',
+        },
+        '&:hover .MuiButton-endIcon': {
+          transform: 'translateX(4px)',
         },
       }}
     >

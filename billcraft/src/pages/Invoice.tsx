@@ -707,7 +707,7 @@ function Invoice() {
           px: { xs: 2, sm: 3, md: 4 },
           py: { xs: 1.5, sm: 2 },
         }}
-        className="no-print"
+        className="no-print animate-slideDown"
       >
         <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
           {/* Mobile Toolbar */}
@@ -1028,8 +1028,13 @@ function Invoice() {
                     fontWeight: 600,
                     px: 2.5,
                     boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                     '&:hover': {
-                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.35)',
+                      boxShadow: '0 6px 16px rgba(25, 118, 210, 0.35)',
+                      transform: 'translateY(-2px)',
+                    },
+                    '&:active': {
+                      transform: 'translateY(0)',
                     },
                   }}
                 >
@@ -1070,12 +1075,16 @@ function Invoice() {
       )}
 
       {/* Main Content Area */}
-      <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, md: 4 } }}>
+      <Box 
+        className="animate-fadeIn"
+        sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, md: 4 } }}
+      >
         <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
           {/* Invoice Document */}
           <Paper 
             ref={invoiceRef} 
             elevation={0}
+            className="animate-slideUp animate-delay-100"
             sx={{ 
               p: { xs: 2, sm: 4, md: 5, lg: 6 }, 
               backgroundColor: '#ffffff',
@@ -1083,12 +1092,17 @@ function Invoice() {
               border: '1px solid',
               borderColor: 'grey.200',
               boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+              transition: 'box-shadow 0.3s ease, transform 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+              },
               // Force consistent desktop-like layout during PDF generation
               ...(isGeneratingPDF && {
                 width: 1100,
                 maxWidth: 'none',
                 p: 6,
                 borderRadius: 0,
+                animation: 'none',
               }),
             }}
           >
@@ -1171,7 +1185,7 @@ function Invoice() {
             borderTop: '1px solid',
             borderColor: 'grey.200',
           }}
-          className="no-print"
+          className="no-print animate-slideUp"
         >
           <Stack direction="row" spacing={1.5} justifyContent="space-around" alignItems="center">
             {/* WhatsApp Share */}
@@ -1183,8 +1197,10 @@ function Invoice() {
                   color: 'white',
                   width: 48,
                   height: 48,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     backgroundColor: '#20bd5a',
+                    transform: 'scale(1.1)',
                   },
                   '&:active': {
                     transform: 'scale(0.95)',
@@ -1208,6 +1224,11 @@ function Invoice() {
                   width: 56,
                   height: 56,
                   boxShadow: '0 4px 14px rgba(25, 118, 210, 0.4)',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  '&:hover': {
+                    transform: 'scale(1.1)',
+                    boxShadow: '0 6px 20px rgba(25, 118, 210, 0.5)',
+                  },
                 }}
               >
                 <DownloadIcon />
@@ -1226,8 +1247,10 @@ function Invoice() {
                   color: 'grey.700',
                   width: 48,
                   height: 48,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:hover': {
                     backgroundColor: 'grey.200',
+                    transform: 'scale(1.1)',
                   },
                   '&:active': {
                     transform: 'scale(0.95)',

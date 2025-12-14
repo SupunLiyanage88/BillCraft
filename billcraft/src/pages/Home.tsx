@@ -42,12 +42,14 @@ function Home() {
 
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: colors.background }}>
-      <AppHeader 
-        primaryColor={colors.primary}
-        textColor={colors.text}
-        borderColor={colors.border}
-        onGetStarted={() => navigate('/invoice')}
-      />
+      <Box className="animate-slideDown">
+        <AppHeader 
+          primaryColor={colors.primary}
+          textColor={colors.text}
+          borderColor={colors.border}
+          onGetStarted={() => navigate('/invoice')}
+        />
+      </Box>
 
       {/* Hero Section */}
       <Container maxWidth="md" sx={{ py: { xs: 10, md: 16 } }}>
@@ -55,6 +57,7 @@ function Home() {
           <Stack spacing={3}>
             <Typography
               variant="h1"
+              className="animate-slideUp"
               sx={{
                 fontSize: { xs: '2.5rem', md: '3.5rem' },
                 fontWeight: 700,
@@ -70,6 +73,7 @@ function Home() {
             
             <Typography
               variant="h6"
+              className="animate-slideUp animate-delay-100"
               sx={{
                 fontSize: { xs: '1.125rem', md: '1.25rem' },
                 fontWeight: 400,
@@ -84,13 +88,15 @@ function Home() {
             </Typography>
           </Stack>
           
-          <PrimaryButton
-            onClick={() => navigate('/invoice')}
-            endIcon={<ArrowForwardIcon />}
-            primaryColor={colors.primary}
-          >
-            Create Invoice
-          </PrimaryButton>
+          <Box className="animate-slideUp animate-delay-200">
+            <PrimaryButton
+              onClick={() => navigate('/invoice')}
+              endIcon={<ArrowForwardIcon />}
+              primaryColor={colors.primary}
+            >
+              Create Invoice
+            </PrimaryButton>
+          </Box>
         </Stack>
       </Container>
 
@@ -103,16 +109,21 @@ function Home() {
             justifyContent="center"
           >
             {features.map((feature, index) => (
-              <FeatureCard
+              <Box 
                 key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                primaryColor={colors.primary}
-                textColor={colors.text}
-                textLightColor={colors.textLight}
-                borderColor={colors.border}
-              />
+                className={`animate-slideUp animate-delay-${(index + 2) * 100}`}
+                sx={{ flex: 1 }}
+              >
+                <FeatureCard
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  primaryColor={colors.primary}
+                  textColor={colors.text}
+                  textLightColor={colors.textLight}
+                  borderColor={colors.border}
+                />
+              </Box>
             ))}
           </Stack>
         </Container>
@@ -121,7 +132,7 @@ function Home() {
       {/* Simple CTA */}
       <Container maxWidth="md" sx={{ py: { xs: 10, md: 14 } }}>
         <Stack spacing={4} alignItems="center" textAlign="center">
-          <Stack spacing={2}>
+          <Stack spacing={2} className="animate-fadeIn animate-delay-300">
             <Typography variant="h3" fontWeight={700} color={colors.text}>
               Ready to get started?
             </Typography>
@@ -130,7 +141,7 @@ function Home() {
             </Typography>
           </Stack>
           
-          <Stack spacing={2} alignItems="center">
+          <Stack spacing={2} alignItems="center" className="animate-slideUp animate-delay-400">
             <PrimaryButton
               onClick={() => navigate('/invoice')}
               endIcon={<ArrowForwardIcon />}
