@@ -252,14 +252,16 @@ function Invoice() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(invoiceRef.current, {
-        scale: 1.5, // Reduced from 2 for smaller file size
+        scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: 1200, // Force consistent width across all devices
+        windowHeight: invoiceRef.current.scrollHeight,
       });
 
       // Use JPEG with compression instead of PNG
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -267,10 +269,26 @@ function Invoice() {
         compress: true, // Enable compression
       });
 
-      const imgWidth = 210; // A4 width in mm
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      // Handle multi-page PDFs if content is taller than one page
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+      
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
       
       setIsGeneratingPDF(false);
       return pdf.output('blob');
@@ -290,14 +308,16 @@ function Invoice() {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(invoiceRef.current, {
-        scale: 1.5, // Reduced from 2 for smaller file size
+        scale: 2, // Higher scale for better quality
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        windowWidth: 1200, // Force consistent width across all devices
+        windowHeight: invoiceRef.current.scrollHeight,
       });
 
       // Use JPEG with compression instead of PNG
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -305,10 +325,27 @@ function Invoice() {
         compress: true, // Enable compression
       });
 
-      const imgWidth = 210; // A4 width in mm
+      const pageWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      // Handle multi-page PDFs if content is taller than one page
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // Add first page
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+      heightLeft -= pageHeight;
+      
+      // Add additional pages if needed
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight, undefined, 'FAST');
+        heightLeft -= pageHeight;
+      }
+      
       pdf.save(`Invoice-${invoiceHeaderData.invoiceNumber}.pdf`);
       
       // Auto-save invoice to history after download
@@ -1053,9 +1090,12 @@ function Invoice() {
               border: '1px solid',
               borderColor: 'grey.200',
               boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-              // Scale up to desktop size only during PDF generation
+              // Force consistent desktop-like layout during PDF generation
               ...(isGeneratingPDF && {
-                minWidth: 800,
+                width: 1100,
+                maxWidth: 'none',
+                p: 6,
+                borderRadius: 0,
               }),
             }}
           >
