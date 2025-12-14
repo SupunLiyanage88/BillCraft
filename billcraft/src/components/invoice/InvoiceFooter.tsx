@@ -6,6 +6,7 @@ interface InvoiceFooterProps {
   phone: string;
   email: string;
   authorizedPerson?: string;
+  primaryColor?: string;
 }
 
 function InvoiceFooter({ 
@@ -13,11 +14,12 @@ function InvoiceFooter({
   businessName, 
   phone, 
   email, 
-  authorizedPerson 
+  authorizedPerson,
+  primaryColor = '#1976d2'
 }: InvoiceFooterProps) {
   return (
     <Box sx={{ textAlign: 'center', marginTop: { xs: 2, md: 4 }, paddingY: { xs: 2, sm: 3 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
-      <Typography variant="h6" color="primary" fontWeight="700" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+      <Typography variant="h6" fontWeight="700" gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' }, color: primaryColor }}>
         {thankYouMessage}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ marginTop: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>

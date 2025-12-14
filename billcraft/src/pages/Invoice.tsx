@@ -26,7 +26,10 @@ import HistoryIcon from '@mui/icons-material/History';
 import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import PaletteIcon from '@mui/icons-material/Palette';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import html2canvas from 'html2canvas';
+import ColorThief from 'colorthief';
 import jsPDF from 'jspdf';
 import pns from '../assets/pns_logo2.png';
 import InvoiceHeader from '../components/invoice/InvoiceHeader';
@@ -35,7 +38,7 @@ import InvoiceItemsTable from '../components/invoice/InvoiceItemsTable';
 import InvoiceSummary from '../components/invoice/InvoiceSummary';
 import PaymentInfo from '../components/invoice/PaymentInfo';
 import InvoiceFooter from '../components/invoice/InvoiceFooter';
-import { saveInvoiceToHistory, getInvoiceHistory, deleteInvoiceFromHistory } from '../utils/localStorage';
+import { saveInvoiceToHistory, getInvoiceHistory, deleteInvoiceFromHistory, getNextInvoiceNumber, incrementInvoiceNumber } from '../utils/localStorage';
 import type { 
   InvoiceItem, 
   InvoiceHeaderData, 
@@ -71,13 +74,31 @@ function Invoice() {
   // Logo
   const [logo, setLogo] = useState<string | null>(pns);
 
+  // Primary color for invoice
+  const [primaryColor, setPrimaryColor] = useState<string>('#1976d2');
+  const colorOptions = [
+    '#1976d2', // Blue
+    '#2e7d32', // Green
+    '#9c27b0', // Purple
+    '#d32f2f', // Red
+    '#ed6c02', // Orange
+    '#0288d1', // Light Blue
+    '#7b1fa2', // Deep Purple
+    '#c2185b', // Pink
+    '#00796b', // Teal
+    '#5d4037', // Brown
+  ];
+
   // Invoice Header
-  const [invoiceHeaderData, setInvoiceHeaderData] = useState<InvoiceHeaderData>({
-    invoiceNumber: '023',
-    issueDate: '2025-10-15',
-    dueDate: '2025-10-29',
-    paymentMethod: 'Bank Transfer',
-    isTaxInvoice: true,
+  const [invoiceHeaderData, setInvoiceHeaderData] = useState<InvoiceHeaderData>(() => {
+    const nextNumber = getNextInvoiceNumber();
+    return {
+      invoiceNumber: nextNumber.toString().padStart(3, '0'),
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      paymentMethod: 'Bank Transfer',
+      isTaxInvoice: true,
+    };
   });
 
   // Seller Details
@@ -167,13 +188,45 @@ function Invoice() {
     setClientDetails(prev => ({ ...prev, [field]: value }));
   };
 
+  // Extract dominant color from image
+  const extractDominantColor = async (imageDataUrl: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const colorThief = new ColorThief();
+          const dominantColor = colorThief.getColor(img);
+          // Convert RGB to Hex
+          const hex = '#' + dominantColor.map((c: number) => c.toString(16).padStart(2, '0')).join('');
+          resolve(hex);
+        } catch (error) {
+          console.error('Error extracting color:', error);
+          reject(error);
+        }
+      };
+      img.onerror = reject;
+      img.src = imageDataUrl;
+    });
+  };
+
   // Handle logo upload
-  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogo(reader.result as string);
+      reader.onloadend = async () => {
+        const imageDataUrl = reader.result as string;
+        setLogo(imageDataUrl);
+        
+        // Auto-extract and apply dominant color
+        try {
+          const dominantColor = await extractDominantColor(imageDataUrl);
+          setPrimaryColor(dominantColor);
+          setSnackbar({ open: true, message: 'Logo uploaded & color matched!', severity: 'success' });
+        } catch (error) {
+          console.error('Could not extract color from image:', error);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -240,6 +293,14 @@ function Invoice() {
       };
       
       saveInvoiceToHistory(savedInvoice);
+      
+      // Increment and set next invoice number for new invoices
+      const nextNumber = incrementInvoiceNumber();
+      setInvoiceHeaderData(prev => ({
+        ...prev,
+        invoiceNumber: nextNumber.toString().padStart(3, '0'),
+      }));
+      
       setSnackbar({ open: true, message: 'Invoice saved successfully!', severity: 'success' });
     } catch (error) {
       console.error('Error saving invoice:', error);
@@ -369,6 +430,67 @@ function Invoice() {
                   </IconButton>
                 </Stack>
               )}
+
+              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+              {/* Color Picker */}
+              <Tooltip title="Invoice Color (auto-detected from logo)">
+                <Stack direction="row" alignItems="center" spacing={0.5}>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <PaletteIcon sx={{ color: 'grey.500', fontSize: 20 }} />
+                    {logo && (
+                      <Tooltip title="Color auto-matched from logo">
+                        <AutoFixHighIcon sx={{ color: primaryColor, fontSize: 16 }} />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                  {colorOptions.slice(0, isMobile ? 5 : 10).map((color) => (
+                    <Box
+                      key={color}
+                      onClick={() => setPrimaryColor(color)}
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        backgroundColor: color,
+                        cursor: 'pointer',
+                        border: primaryColor === color ? '2px solid' : '2px solid transparent',
+                        borderColor: primaryColor === color ? 'grey.800' : 'transparent',
+                        transition: 'all 0.15s ease',
+                        '&:hover': {
+                          transform: 'scale(1.2)',
+                        },
+                      }}
+                    />
+                  ))}
+                  {/* Show extracted color if different from presets */}
+                  {!colorOptions.includes(primaryColor) && (
+                    <Tooltip title="Extracted from logo">
+                      <Box
+                        sx={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          backgroundColor: primaryColor,
+                          border: '2px solid',
+                          borderColor: 'grey.800',
+                          position: 'relative',
+                          '&::after': {
+                            content: '"✓"',
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: 10,
+                            color: 'white',
+                            textShadow: '0 0 2px rgba(0,0,0,0.5)',
+                          },
+                        }}
+                      />
+                    </Tooltip>
+                  )}
+                </Stack>
+              </Tooltip>
             </Stack>
 
             {/* Right side - Actions */}
@@ -466,6 +588,7 @@ function Invoice() {
               logo={logo}
               isGeneratingPDF={isGeneratingPDF}
               onUpdate={handleInvoiceHeaderUpdate}
+              primaryColor={primaryColor}
             />
 
             <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
@@ -486,6 +609,7 @@ function Invoice() {
               onAddItem={handleAddItem}
               onRemoveItem={handleRemoveItem}
               calculateItemAmount={calculateItemAmount}
+              primaryColor={primaryColor}
             />
 
             <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
@@ -497,6 +621,7 @@ function Invoice() {
               currency={currency}
               isGeneratingPDF={isGeneratingPDF}
               onCurrencyChange={setCurrency}
+              primaryColor={primaryColor}
             />
 
             <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
@@ -511,6 +636,7 @@ function Invoice() {
               phone={sellerDetails.phone}
               email={sellerDetails.email}
               authorizedPerson={sellerDetails.authorizedPerson}
+              primaryColor={primaryColor}
             />
           </Paper>
         </Box>

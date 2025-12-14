@@ -8,6 +8,7 @@ interface InvoiceSummaryProps {
   currency: string;
   isGeneratingPDF: boolean;
   onCurrencyChange: (currency: string) => void;
+  primaryColor?: string;
 }
 
 function InvoiceSummary({ 
@@ -16,7 +17,8 @@ function InvoiceSummary({
   total, 
   currency, 
   isGeneratingPDF, 
-  onCurrencyChange 
+  onCurrencyChange,
+  primaryColor = '#1976d2'
 }: InvoiceSummaryProps) {
   const taxAmount = (subtotal * taxInfo.taxPercentage) / 100;
 
@@ -42,7 +44,7 @@ function InvoiceSummary({
           
           <Divider sx={{ borderColor: '#d0d0d0' }} />
           
-          <Stack direction="row" justifyContent="space-between" sx={{ paddingY: 1, backgroundColor: 'primary.main', paddingX: 2, borderRadius: 1 }}>
+          <Stack direction="row" justifyContent="space-between" sx={{ paddingY: 1, backgroundColor: primaryColor, paddingX: 2, borderRadius: 1 }}>
             <Typography variant="h6" fontWeight="700" color="white">
               TOTAL ({currency})
             </Typography>

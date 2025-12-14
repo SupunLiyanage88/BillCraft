@@ -21,6 +21,7 @@ interface InvoiceItemsTableProps {
   onAddItem: () => void;
   onRemoveItem: (id: number) => void;
   calculateItemAmount: (item: InvoiceItem) => number;
+  primaryColor?: string;
 }
 
 function InvoiceItemsTable({ 
@@ -29,7 +30,8 @@ function InvoiceItemsTable({
   onItemChange, 
   onAddItem, 
   onRemoveItem,
-  calculateItemAmount 
+  calculateItemAmount,
+  primaryColor = '#1976d2'
 }: InvoiceItemsTableProps) {
   return (
     <>
@@ -109,7 +111,7 @@ function InvoiceItemsTable({
                   )}
                 </TableCell>
                 <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
-                  <Typography variant="body2" fontWeight="600" color="primary.main" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  <Typography variant="body2" fontWeight="600" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, color: primaryColor }}>
                     ${calculateItemAmount(item).toFixed(2)}
                   </Typography>
                 </TableCell>
@@ -135,9 +137,17 @@ function InvoiceItemsTable({
         <Button
           startIcon={<AddIcon />}
           onClick={onAddItem}
-          sx={{ marginTop: 2, width: { xs: '100%', sm: 'auto' } }}
+          sx={{ 
+            marginTop: 2, 
+            width: { xs: '100%', sm: 'auto' },
+            borderColor: primaryColor,
+            color: primaryColor,
+            '&:hover': {
+              borderColor: primaryColor,
+              backgroundColor: `${primaryColor}10`,
+            }
+          }}
           variant="outlined"
-          color="primary"
         >
           Add Item
         </Button>

@@ -6,22 +6,22 @@ interface InvoiceHeaderProps {
   logo: string | null;
   isGeneratingPDF: boolean;
   onUpdate: (field: keyof InvoiceHeaderData, value: string | boolean) => void;
+  primaryColor?: string;
 }
 
-function InvoiceHeader({ data, logo, isGeneratingPDF, onUpdate }: InvoiceHeaderProps) {
+function InvoiceHeader({ data, logo, isGeneratingPDF, onUpdate, primaryColor = '#1976d2' }: InvoiceHeaderProps) {
   return (
     <Box sx={{ marginBottom: { xs: 2, md: 4 } }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'center', sm: 'flex-start' }} flexWrap="wrap" gap={2}>
         <Box sx={{ textAlign: { xs: 'center', sm: 'left' } }}>
-          <Typography variant="h3" fontWeight="700" color="primary.main" sx={{ letterSpacing: 1, fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' } }}>
+          <Typography variant="h3" fontWeight="700" sx={{ letterSpacing: 1, fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' }, color: primaryColor }}>
             INVOICE
           </Typography>
           {data.isTaxInvoice && (
             <Chip 
               label="TAX INVOICE" 
-              color="primary" 
               size="small"
-              sx={{ marginTop: 1, fontWeight: 600 }}
+              sx={{ marginTop: 1, fontWeight: 600, backgroundColor: primaryColor, color: 'white' }}
             />
           )}
         </Box>

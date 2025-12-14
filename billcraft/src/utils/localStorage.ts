@@ -1,6 +1,7 @@
 import type { SavedInvoice } from '../types/invoice';
 
 const STORAGE_KEY = 'billcraft_invoice_history';
+const INVOICE_NUMBER_KEY = 'billcraft_invoice_number';
 const MAX_RECORDS = 20;
 
 export const saveInvoiceToHistory = (invoice: SavedInvoice): void => {
@@ -57,5 +58,36 @@ export const clearInvoiceHistory = (): void => {
   } catch (error) {
     console.error('Error clearing invoice history:', error);
     throw new Error('Failed to clear invoice history');
+  }
+};
+
+// Invoice number counter functions - persists independently of history
+export const getNextInvoiceNumber = (): number => {
+  try {
+    const data = localStorage.getItem(INVOICE_NUMBER_KEY);
+    return data ? parseInt(data, 10) : 1;
+  } catch (error) {
+    console.error('Error getting invoice number:', error);
+    return 1;
+  }
+};
+
+export const incrementInvoiceNumber = (): number => {
+  try {
+    const currentNumber = getNextInvoiceNumber();
+    const nextNumber = currentNumber + 1;
+    localStorage.setItem(INVOICE_NUMBER_KEY, nextNumber.toString());
+    return nextNumber;
+  } catch (error) {
+    console.error('Error incrementing invoice number:', error);
+    return 1;
+  }
+};
+
+export const setInvoiceNumber = (number: number): void => {
+  try {
+    localStorage.setItem(INVOICE_NUMBER_KEY, number.toString());
+  } catch (error) {
+    console.error('Error setting invoice number:', error);
   }
 };
