@@ -249,7 +249,8 @@ function Invoice() {
 
     try {
       setIsGeneratingPDF(true);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Longer delay for mobile to ensure DOM is ready and animations complete
+      await new Promise(resolve => setTimeout(resolve, isMobile ? 300 : 150));
 
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2, // Higher scale for better quality
@@ -257,6 +258,12 @@ function Invoice() {
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1200, // Force consistent width across all devices
+        onclone: (clonedDoc) => {
+          // Remove all animations from cloned document for clean capture
+          const style = clonedDoc.createElement('style');
+          style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; opacity: 1 !important; }';
+          clonedDoc.head.appendChild(style);
+        },
       });
 
       // Use JPEG with compression instead of PNG
@@ -302,7 +309,8 @@ function Invoice() {
 
     try {
       setIsGeneratingPDF(true);
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Longer delay for mobile to ensure DOM is ready and animations complete
+      await new Promise(resolve => setTimeout(resolve, isMobile ? 300 : 150));
 
       const canvas = await html2canvas(invoiceRef.current, {
         scale: 2, // Higher scale for better quality
@@ -310,6 +318,12 @@ function Invoice() {
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 1200, // Force consistent width across all devices
+        onclone: (clonedDoc) => {
+          // Remove all animations from cloned document for clean capture
+          const style = clonedDoc.createElement('style');
+          style.textContent = '*, *::before, *::after { animation: none !important; transition: none !important; opacity: 1 !important; }';
+          clonedDoc.head.appendChild(style);
+        },
       });
 
       // Use JPEG with compression instead of PNG
