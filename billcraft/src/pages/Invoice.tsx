@@ -17,6 +17,9 @@ import {
   Fade,
   useTheme,
   useMediaQuery,
+  SwipeableDrawer,
+  Fab,
+  Collapse,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PrintIcon from '@mui/icons-material/Print';
@@ -27,7 +30,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import PaletteIcon from '@mui/icons-material/Palette';
+import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import html2canvas from 'html2canvas';
 import ColorThief from 'colorthief';
 import jsPDF from 'jspdf';
@@ -63,6 +69,10 @@ function Invoice() {
   // History dialog state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [history, setHistory] = useState<SavedInvoice[]>([]);
+
+  // Mobile UI states
+  const [isToolbarExpanded, setIsToolbarExpanded] = useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
 
   // Snackbar state
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ 
@@ -232,43 +242,120 @@ function Invoice() {
     }
   };
 
-  // Handle PDF download
-  const handleDownloadPDF = async () => {
-    if (!invoiceRef.current) return;
+  // Generate PDF blob (reusable for download and share)
+  const generatePDFBlob = async (): Promise<Blob | null> => {
+    if (!invoiceRef.current) return null;
 
     try {
-      // Set generating state to hide input fields
       setIsGeneratingPDF(true);
-      
-      // Wait for state update to render
       await new Promise(resolve => setTimeout(resolve, 100));
 
       const canvas = await html2canvas(invoiceRef.current, {
-        scale: 2,
+        scale: 1.5, // Reduced from 2 for smaller file size
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
       });
 
-      const imgData = canvas.toDataURL('image/png');
+      // Use JPEG with compression instead of PNG
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4',
+        compress: true, // Enable compression
       });
 
       const imgWidth = 210; // A4 width in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+      
+      setIsGeneratingPDF(false);
+      return pdf.output('blob');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      setIsGeneratingPDF(false);
+      return null;
+    }
+  };
+
+  // Handle PDF download
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+
+    try {
+      setIsGeneratingPDF(true);
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 1.5, // Reduced from 2 for smaller file size
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Use JPEG with compression instead of PNG
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true, // Enable compression
+      });
+
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`Invoice-${invoiceHeaderData.invoiceNumber}.pdf`);
       
-      // Reset generating state
       setIsGeneratingPDF(false);
     } catch (error) {
       console.error('Error generating PDF:', error);
       setIsGeneratingPDF(false);
     }
+  };
+
+  // Handle WhatsApp share
+  const handleWhatsAppShare = async () => {
+    const invoiceNumber = invoiceHeaderData.invoiceNumber;
+    const clientName = clientDetails.name || 'Customer';
+    const total = calculateTotal().toFixed(2);
+    
+    // Check if Web Share API is available (mobile devices)
+    if (navigator.share && navigator.canShare) {
+      try {
+        const pdfBlob = await generatePDFBlob();
+        if (pdfBlob) {
+          const file = new File([pdfBlob], `Invoice-${invoiceNumber}.pdf`, { type: 'application/pdf' });
+          
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: `Invoice #${invoiceNumber}`,
+              text: `Invoice #${invoiceNumber} for ${clientName} - Total: ${currency} ${total}`,
+              files: [file],
+            });
+            setSnackbar({ open: true, message: 'Shared successfully!', severity: 'success' });
+            return;
+          }
+        }
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Share failed:', error);
+        }
+      }
+    }
+    
+    // Fallback: Open WhatsApp with a text message
+    const message = encodeURIComponent(
+      `📄 Invoice #${invoiceNumber}\n` +
+      `👤 Client: ${clientName}\n` +
+      `💰 Total: ${currency} ${total}\n\n` +
+      `Please download the PDF from our system or request it via email.`
+    );
+    window.open(`https://wa.me/?text=${message}`, '_blank');
+    setSnackbar({ open: true, message: 'Opening WhatsApp...', severity: 'success' });
   };
 
   // Handle print
@@ -358,13 +445,194 @@ function Invoice() {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Mobile Color Picker Drawer
+  const ColorPickerDrawer = () => (
+    <SwipeableDrawer
+      anchor="bottom"
+      open={isColorPickerOpen}
+      onClose={() => setIsColorPickerOpen(false)}
+      onOpen={() => setIsColorPickerOpen(true)}
+      disableSwipeToOpen
+      PaperProps={{
+        sx: {
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+          px: 3,
+          py: 2,
+          pb: 4,
+        }
+      }}
+    >
+      <Box sx={{ width: 40, height: 4, backgroundColor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 2 }} />
+      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+        Choose Invoice Color
+      </Typography>
+      {logo && (
+        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
+          <AutoFixHighIcon sx={{ color: primaryColor, fontSize: 18 }} />
+          <Typography variant="body2" color="text.secondary">
+            Color auto-detected from logo
+          </Typography>
+        </Stack>
+      )}
+      <Stack direction="row" flexWrap="wrap" gap={2} justifyContent="center">
+        {colorOptions.map((color) => (
+          <Box
+            key={color}
+            onClick={() => {
+              setPrimaryColor(color);
+              setIsColorPickerOpen(false);
+            }}
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              backgroundColor: color,
+              cursor: 'pointer',
+              border: primaryColor === color ? '3px solid' : '3px solid transparent',
+              borderColor: primaryColor === color ? 'grey.800' : 'transparent',
+              transition: 'all 0.15s ease',
+              '&:active': {
+                transform: 'scale(0.95)',
+              },
+            }}
+          />
+        ))}
+        {/* Show extracted color if different from presets */}
+        {!colorOptions.includes(primaryColor) && (
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              backgroundColor: primaryColor,
+              border: '3px solid',
+              borderColor: 'grey.800',
+              position: 'relative',
+              '&::after': {
+                content: '"✓"',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                fontSize: 16,
+                color: 'white',
+                textShadow: '0 0 2px rgba(0,0,0,0.5)',
+              },
+            }}
+          />
+        )}
+      </Stack>
+    </SwipeableDrawer>
+  );
+
+  // History Drawer/Dialog - Swipeable drawer for mobile, Dialog for desktop
+  const HistoryContent = () => (
+    <>
+      {history.length === 0 ? (
+        <Box sx={{ 
+          py: 6, 
+          textAlign: 'center',
+        }}>
+          <DescriptionOutlinedIcon sx={{ fontSize: 48, color: 'grey.300', mb: 2 }} />
+          <Typography color="text.secondary" fontWeight={500}>
+            No saved invoices yet
+          </Typography>
+          <Typography variant="body2" color="text.disabled" mt={0.5}>
+            Tap "Save" to save your first invoice
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={1.5} sx={{ py: 1 }}>
+          {history.map((invoice) => (
+            <Paper
+              key={invoice.id}
+              elevation={0}
+              onClick={() => handleLoadInvoice(invoice)}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'grey.200',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                // Better touch feedback for mobile
+                '&:active': {
+                  backgroundColor: 'primary.50',
+                  transform: 'scale(0.98)',
+                },
+                '@media (hover: hover)': {
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    backgroundColor: 'primary.50',
+                    transform: 'translateX(4px)',
+                  },
+                },
+              }}
+            >
+              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Box sx={{ 
+                    width: 48, 
+                    height: 48, 
+                    borderRadius: 2,
+                    backgroundColor: 'primary.100',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <Typography variant="body2" fontWeight={700} color="primary.main">
+                      #{invoice.invoiceHeader.invoiceNumber}
+                    </Typography>
+                  </Box>
+                  <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                    <Typography variant="subtitle2" fontWeight={600} noWrap>
+                      {invoice.client.name || 'No client name'}
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDate(invoice.savedAt)}
+                      </Typography>
+                      <Typography variant="caption" color="text.disabled">•</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {invoice.items.length} item{invoice.items.length !== 1 ? 's' : ''}
+                      </Typography>
+                    </Stack>
+                  </Stack>
+                </Stack>
+                
+                <IconButton
+                  size="medium"
+                  onClick={(e) => handleDeleteInvoice(invoice.id, e)}
+                  sx={{
+                    color: 'grey.400',
+                    minWidth: 44,
+                    minHeight: 44,
+                    '&:hover': {
+                      color: 'error.main',
+                      backgroundColor: 'error.50',
+                    },
+                  }}
+                >
+                  <DeleteOutlineIcon />
+                </IconButton>
+              </Stack>
+            </Paper>
+          ))}
+        </Stack>
+      )}
+    </>
+  );
+
   return (
     <Box sx={{ 
       backgroundColor: '#f8fafc', 
       minHeight: '100vh',
-      pb: 4,
+      // Add padding bottom for mobile bottom bar
+      pb: { xs: 12, md: 4 },
     }}>
-      {/* Top Toolbar */}
+      {/* Top Toolbar - Compact on mobile */}
       <Paper 
         elevation={0}
         sx={{ 
@@ -376,130 +644,155 @@ function Invoice() {
           borderBottom: '1px solid',
           borderColor: 'divider',
           px: { xs: 2, sm: 3, md: 4 },
-          py: 2,
+          py: { xs: 1.5, sm: 2 },
         }}
         className="no-print"
       >
         <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            justifyContent="space-between" 
-            alignItems={{ xs: 'stretch', sm: 'center' }}
-            spacing={2}
-          >
-            {/* Left side - Logo upload */}
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={<CloudUploadIcon />}
-                size="small"
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  borderColor: 'grey.300',
-                  color: 'grey.700',
-                  '&:hover': {
-                    borderColor: 'primary.main',
-                    backgroundColor: 'primary.50',
-                  },
-                }}
-              >
-                {logo ? 'Change Logo' : 'Upload Logo'}
-                <input
-                  type="file"
-                  hidden
-                  accept="image/*"
-                  onChange={handleLogoUpload}
-                />
-              </Button>
-              {logo && (
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <Avatar 
-                    src={logo} 
-                    variant="rounded" 
-                    sx={{ width: 36, height: 36, border: '1px solid', borderColor: 'grey.200' }} 
-                  />
-                  <IconButton 
-                    size="small" 
-                    onClick={() => setLogo(null)}
-                    sx={{ color: 'grey.500' }}
+          {/* Mobile Toolbar */}
+          {isMobile ? (
+            <Stack spacing={1.5}>
+              {/* Primary row - always visible */}
+              <Stack direction="row" justifyContent="space-between" alignItems="center">
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  {/* Logo upload button */}
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderColor: 'grey.300',
+                      color: 'grey.700',
+                      minWidth: 'auto',
+                      px: 1.5,
+                      minHeight: 40,
+                      '&:hover': {
+                        borderColor: 'primary.main',
+                      },
+                    }}
                   >
-                    <CloseIcon fontSize="small" />
-                  </IconButton>
-                </Stack>
-              )}
-
-              <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
-
-              {/* Color Picker */}
-              <Tooltip title="Invoice Color (auto-detected from logo)">
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Stack direction="row" alignItems="center" spacing={0.5}>
-                    <PaletteIcon sx={{ color: 'grey.500', fontSize: 20 }} />
-                    {logo && (
-                      <Tooltip title="Color auto-matched from logo">
-                        <AutoFixHighIcon sx={{ color: primaryColor, fontSize: 16 }} />
-                      </Tooltip>
-                    )}
-                  </Stack>
-                  {colorOptions.slice(0, isMobile ? 5 : 10).map((color) => (
-                    <Box
-                      key={color}
-                      onClick={() => setPrimaryColor(color)}
-                      sx={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        backgroundColor: color,
-                        cursor: 'pointer',
-                        border: primaryColor === color ? '2px solid' : '2px solid transparent',
-                        borderColor: primaryColor === color ? 'grey.800' : 'transparent',
-                        transition: 'all 0.15s ease',
-                        '&:hover': {
-                          transform: 'scale(1.2)',
-                        },
-                      }}
+                    <CloudUploadIcon fontSize="small" sx={{ mr: logo ? 0 : 0.5 }} />
+                    {!logo && <Typography variant="caption">Logo</Typography>}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleLogoUpload}
                     />
-                  ))}
-                  {/* Show extracted color if different from presets */}
-                  {!colorOptions.includes(primaryColor) && (
-                    <Tooltip title="Extracted from logo">
-                      <Box
-                        sx={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: '50%',
-                          backgroundColor: primaryColor,
-                          border: '2px solid',
-                          borderColor: 'grey.800',
-                          position: 'relative',
-                          '&::after': {
-                            content: '"✓"',
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            fontSize: 10,
-                            color: 'white',
-                            textShadow: '0 0 2px rgba(0,0,0,0.5)',
-                          },
-                        }}
+                  </Button>
+                  {logo && (
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Avatar 
+                        src={logo} 
+                        variant="rounded" 
+                        sx={{ width: 32, height: 32, border: '1px solid', borderColor: 'grey.200' }} 
                       />
-                    </Tooltip>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => setLogo(null)}
+                        sx={{ color: 'grey.500', padding: 0.5 }}
+                      >
+                        <CloseIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </Stack>
                   )}
                 </Stack>
-              </Tooltip>
-            </Stack>
 
-            {/* Right side - Actions */}
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <Tooltip title="View History">
+                <Stack direction="row" alignItems="center" spacing={1}>
+                  {/* Color picker button */}
+                  <IconButton
+                    onClick={() => setIsColorPickerOpen(true)}
+                    sx={{
+                      minWidth: 40,
+                      minHeight: 40,
+                      border: '2px solid',
+                      borderColor: primaryColor,
+                      backgroundColor: `${primaryColor}15`,
+                    }}
+                  >
+                    <PaletteIcon sx={{ color: primaryColor, fontSize: 20 }} />
+                  </IconButton>
+                  
+                  {/* Expand/collapse more options */}
+                  <IconButton
+                    onClick={() => setIsToolbarExpanded(!isToolbarExpanded)}
+                    sx={{ minWidth: 40, minHeight: 40 }}
+                  >
+                    {isToolbarExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                  </IconButton>
+                </Stack>
+              </Stack>
+
+              {/* Expanded options */}
+              <Collapse in={isToolbarExpanded}>
+                <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ pt: 1 }}>
+                  <Button
+                    variant="outlined"
+                    onClick={handleOpenHistory}
+                    startIcon={<HistoryIcon />}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderColor: 'grey.300',
+                      color: 'grey.700',
+                      minHeight: 40,
+                    }}
+                  >
+                    History
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={handleSaveDraft}
+                    startIcon={<SaveIcon />}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderColor: 'grey.300',
+                      color: 'grey.700',
+                      minHeight: 40,
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={handlePrint}
+                    startIcon={<PrintIcon />}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderColor: 'grey.300',
+                      color: 'grey.700',
+                      minHeight: 40,
+                    }}
+                  >
+                    Print
+                  </Button>
+                </Stack>
+              </Collapse>
+            </Stack>
+          ) : (
+            /* Desktop Toolbar */
+            <Stack 
+              direction="row"
+              justifyContent="space-between" 
+              alignItems="center"
+            >
+              {/* Left side - Logo upload */}
+              <Stack direction="row" alignItems="center" spacing={2}>
                 <Button
                   variant="outlined"
-                  onClick={handleOpenHistory}
-                  startIcon={<HistoryIcon />}
+                  component="label"
+                  startIcon={<CloudUploadIcon />}
                   size="small"
                   sx={{
                     borderRadius: 2,
@@ -507,77 +800,197 @@ function Invoice() {
                     fontWeight: 500,
                     borderColor: 'grey.300',
                     color: 'grey.700',
-                    minWidth: 'auto',
                     '&:hover': {
-                      borderColor: 'secondary.main',
-                      backgroundColor: 'secondary.50',
+                      borderColor: 'primary.main',
+                      backgroundColor: 'primary.50',
                     },
                   }}
                 >
-                  {!isMobile && 'History'}
+                  {logo ? 'Change Logo' : 'Upload Logo'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                  />
                 </Button>
-              </Tooltip>
-              
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
-              
-              <Tooltip title="Save Draft">
-                <IconButton 
-                  onClick={handleSaveDraft}
-                  sx={{ 
-                    color: 'grey.600',
-                    '&:hover': { backgroundColor: 'grey.100' },
+                {logo && (
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Avatar 
+                      src={logo} 
+                      variant="rounded" 
+                      sx={{ width: 36, height: 36, border: '1px solid', borderColor: 'grey.200' }} 
+                    />
+                    <IconButton 
+                      size="small" 
+                      onClick={() => setLogo(null)}
+                      sx={{ color: 'grey.500' }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  </Stack>
+                )}
+
+                <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
+
+                {/* Color Picker */}
+                <Tooltip title="Invoice Color (auto-detected from logo)">
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <PaletteIcon sx={{ color: 'grey.500', fontSize: 20 }} />
+                      {logo && (
+                        <Tooltip title="Color auto-matched from logo">
+                          <AutoFixHighIcon sx={{ color: primaryColor, fontSize: 16 }} />
+                        </Tooltip>
+                      )}
+                    </Stack>
+                    {colorOptions.map((color) => (
+                      <Box
+                        key={color}
+                        onClick={() => setPrimaryColor(color)}
+                        sx={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: '50%',
+                          backgroundColor: color,
+                          cursor: 'pointer',
+                          border: primaryColor === color ? '2px solid' : '2px solid transparent',
+                          borderColor: primaryColor === color ? 'grey.800' : 'transparent',
+                          transition: 'all 0.15s ease',
+                          '&:hover': {
+                            transform: 'scale(1.2)',
+                          },
+                        }}
+                      />
+                    ))}
+                    {/* Show extracted color if different from presets */}
+                    {!colorOptions.includes(primaryColor) && (
+                      <Tooltip title="Extracted from logo">
+                        <Box
+                          sx={{
+                            width: 20,
+                            height: 20,
+                            borderRadius: '50%',
+                            backgroundColor: primaryColor,
+                            border: '2px solid',
+                            borderColor: 'grey.800',
+                            position: 'relative',
+                            '&::after': {
+                              content: '"✓"',
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              fontSize: 10,
+                              color: 'white',
+                              textShadow: '0 0 2px rgba(0,0,0,0.5)',
+                            },
+                          }}
+                        />
+                      </Tooltip>
+                    )}
+                  </Stack>
+                </Tooltip>
+              </Stack>
+
+              {/* Right side - Actions */}
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Tooltip title="View History">
+                  <Button
+                    variant="outlined"
+                    onClick={handleOpenHistory}
+                    startIcon={<HistoryIcon />}
+                    size="small"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      fontWeight: 500,
+                      borderColor: 'grey.300',
+                      color: 'grey.700',
+                      minWidth: 'auto',
+                      '&:hover': {
+                        borderColor: 'secondary.main',
+                        backgroundColor: 'secondary.50',
+                      },
+                    }}
+                  >
+                    History
+                  </Button>
+                </Tooltip>
+                
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+                
+                <Tooltip title="Save Draft">
+                  <IconButton 
+                    onClick={handleSaveDraft}
+                    sx={{ 
+                      color: 'grey.600',
+                      '&:hover': { backgroundColor: 'grey.100' },
+                    }}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Tooltip title="Print">
+                  <IconButton 
+                    onClick={handlePrint}
+                    sx={{ 
+                      color: 'grey.600',
+                      '&:hover': { backgroundColor: 'grey.100' },
+                    }}
+                  >
+                    <PrintIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Share via WhatsApp">
+                  <IconButton 
+                    onClick={handleWhatsAppShare}
+                    sx={{ 
+                      color: '#25D366',
+                      '&:hover': { backgroundColor: 'rgba(37, 211, 102, 0.1)' },
+                    }}
+                  >
+                    <WhatsAppIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                <Button
+                  variant="contained"
+                  onClick={handleDownloadPDF}
+                  startIcon={<DownloadIcon />}
+                  size="small"
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 2.5,
+                    boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)',
+                    '&:hover': {
+                      boxShadow: '0 4px 12px rgba(25, 118, 210, 0.35)',
+                    },
                   }}
                 >
-                  <SaveIcon />
-                </IconButton>
-              </Tooltip>
-              
-              <Tooltip title="Print">
-                <IconButton 
-                  onClick={handlePrint}
-                  sx={{ 
-                    color: 'grey.600',
-                    '&:hover': { backgroundColor: 'grey.100' },
-                  }}
-                >
-                  <PrintIcon />
-                </IconButton>
-              </Tooltip>
-              
-              <Button
-                variant="contained"
-                onClick={handleDownloadPDF}
-                startIcon={<DownloadIcon />}
-                size="small"
-                sx={{
-                  borderRadius: 2,
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 2.5,
-                  boxShadow: '0 2px 8px rgba(25, 118, 210, 0.25)',
-                  '&:hover': {
-                    boxShadow: '0 4px 12px rgba(25, 118, 210, 0.35)',
-                  },
-                }}
-              >
-                Download PDF
-              </Button>
+                  Download PDF
+                </Button>
+              </Stack>
             </Stack>
-          </Stack>
+          )}
         </Box>
       </Paper>
 
       {/* Main Content Area */}
-      <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 3, md: 4 } }}>
+      <Box sx={{ px: { xs: 1.5, sm: 3, md: 4 }, pt: { xs: 2, md: 4 } }}>
         <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
           {/* Invoice Document */}
           <Paper 
             ref={invoiceRef} 
             elevation={0}
             sx={{ 
-              p: { xs: 3, sm: 4, md: 5, lg: 6 }, 
+              p: { xs: 2, sm: 4, md: 5, lg: 6 }, 
               backgroundColor: '#ffffff',
-              borderRadius: 3,
+              borderRadius: { xs: 2, md: 3 },
               border: '1px solid',
               borderColor: 'grey.200',
               boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
@@ -591,7 +1004,7 @@ function Invoice() {
               primaryColor={primaryColor}
             />
 
-            <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
+            <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
             <InvoiceParties 
               seller={sellerDetails}
@@ -600,7 +1013,7 @@ function Invoice() {
               onClientUpdate={handleClientUpdate}
             />
 
-            <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
+            <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
             <InvoiceItemsTable 
               items={items}
@@ -612,7 +1025,7 @@ function Invoice() {
               primaryColor={primaryColor}
             />
 
-            <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
+            <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
             <InvoiceSummary 
               subtotal={calculateSubtotal()}
@@ -624,11 +1037,11 @@ function Invoice() {
               primaryColor={primaryColor}
             />
 
-            <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
+            <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
             <PaymentInfo bankDetails={bankDetails} />
 
-            <Divider sx={{ my: { xs: 3, md: 4 }, borderColor: 'grey.200' }} />
+            <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
             <InvoiceFooter 
               thankYouMessage={thankYouMessage}
@@ -642,145 +1055,215 @@ function Invoice() {
         </Box>
       </Box>
 
-      {/* History Dialog */}
-      <Dialog
-        open={isHistoryOpen}
-        onClose={() => setIsHistoryOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        TransitionComponent={Fade}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            maxHeight: '80vh',
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          pb: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <HistoryIcon color="primary" />
-            <Typography variant="h6" fontWeight={600}>
-              Saved Invoices
-            </Typography>
-            <Typography 
-              variant="caption" 
-              sx={{ 
-                backgroundColor: 'grey.100', 
-                px: 1.5, 
-                py: 0.5, 
-                borderRadius: 2,
-                fontWeight: 600,
-                color: 'grey.600',
-              }}
-            >
-              {history.length} / 20
-            </Typography>
+      {/* Mobile Bottom Action Bar */}
+      {isMobile && (
+        <Paper
+          elevation={8}
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 100,
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            px: 2,
+            py: 1.5,
+            pb: 'calc(env(safe-area-inset-bottom, 8px) + 8px)', // Safe area for notched phones
+            backgroundColor: 'white',
+            borderTop: '1px solid',
+            borderColor: 'grey.200',
+          }}
+          className="no-print"
+        >
+          <Stack direction="row" spacing={1.5} justifyContent="space-around" alignItems="center">
+            {/* WhatsApp Share */}
+            <Stack alignItems="center" spacing={0.5}>
+              <IconButton
+                onClick={handleWhatsAppShare}
+                sx={{
+                  backgroundColor: '#25D366',
+                  color: 'white',
+                  width: 48,
+                  height: 48,
+                  '&:hover': {
+                    backgroundColor: '#20bd5a',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)',
+                  },
+                }}
+              >
+                <WhatsAppIcon />
+              </IconButton>
+              <Typography variant="caption" color="text.secondary" fontSize={10}>
+                WhatsApp
+              </Typography>
+            </Stack>
+
+            {/* Download PDF - Primary action */}
+            <Stack alignItems="center" spacing={0.5}>
+              <Fab
+                color="primary"
+                onClick={handleDownloadPDF}
+                disabled={isGeneratingPDF}
+                sx={{
+                  width: 56,
+                  height: 56,
+                  boxShadow: '0 4px 14px rgba(25, 118, 210, 0.4)',
+                }}
+              >
+                <DownloadIcon />
+              </Fab>
+              <Typography variant="caption" color="primary" fontWeight={600} fontSize={10}>
+                Download
+              </Typography>
+            </Stack>
+
+            {/* Save Draft */}
+            <Stack alignItems="center" spacing={0.5}>
+              <IconButton
+                onClick={handleSaveDraft}
+                sx={{
+                  backgroundColor: 'grey.100',
+                  color: 'grey.700',
+                  width: 48,
+                  height: 48,
+                  '&:hover': {
+                    backgroundColor: 'grey.200',
+                  },
+                  '&:active': {
+                    transform: 'scale(0.95)',
+                  },
+                }}
+              >
+                <SaveIcon />
+              </IconButton>
+              <Typography variant="caption" color="text.secondary" fontSize={10}>
+                Save
+              </Typography>
+            </Stack>
           </Stack>
-          <IconButton onClick={() => setIsHistoryOpen(false)} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        
-        <DialogContent sx={{ pt: 1 }}>
-          {history.length === 0 ? (
-            <Box sx={{ 
-              py: 6, 
-              textAlign: 'center',
-            }}>
-              <DescriptionOutlinedIcon sx={{ fontSize: 48, color: 'grey.300', mb: 2 }} />
-              <Typography color="text.secondary" fontWeight={500}>
-                No saved invoices yet
-              </Typography>
-              <Typography variant="body2" color="text.disabled" mt={0.5}>
-                Click "Save" to save your first invoice
-              </Typography>
-            </Box>
-          ) : (
-            <Stack spacing={1.5} sx={{ py: 1 }}>
-              {history.map((invoice) => (
-                <Paper
-                  key={invoice.id}
-                  elevation={0}
-                  onClick={() => handleLoadInvoice(invoice)}
-                  sx={{
-                    p: 2,
+        </Paper>
+      )}
+
+      {/* Color Picker Drawer for Mobile */}
+      <ColorPickerDrawer />
+
+      {/* History - SwipeableDrawer for mobile, Dialog for desktop */}
+      {isMobile ? (
+        <SwipeableDrawer
+          anchor="bottom"
+          open={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          onOpen={() => {
+            loadHistory();
+            setIsHistoryOpen(true);
+          }}
+          disableSwipeToOpen
+          PaperProps={{
+            sx: {
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              maxHeight: '85vh',
+              pb: 'env(safe-area-inset-bottom, 16px)',
+            }
+          }}
+        >
+          <Box sx={{ px: 3, py: 2 }}>
+            {/* Drag handle */}
+            <Box sx={{ width: 40, height: 4, backgroundColor: 'grey.300', borderRadius: 2, mx: 'auto', mb: 2 }} />
+            
+            <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Stack direction="row" alignItems="center" spacing={1.5}>
+                <HistoryIcon color="primary" />
+                <Typography variant="h6" fontWeight={600}>
+                  Saved Invoices
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    backgroundColor: 'grey.100', 
+                    px: 1.5, 
+                    py: 0.5, 
                     borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: 'grey.200',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      borderColor: 'primary.main',
-                      backgroundColor: 'primary.50',
-                      transform: 'translateX(4px)',
-                    },
+                    fontWeight: 600,
+                    color: 'grey.600',
                   }}
                 >
-                  <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <Box sx={{ 
-                        width: 44, 
-                        height: 44, 
-                        borderRadius: 2,
-                        backgroundColor: 'primary.100',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}>
-                        <Typography variant="body2" fontWeight={700} color="primary.main">
-                          #{invoice.invoiceHeader.invoiceNumber}
-                        </Typography>
-                      </Box>
-                      <Stack spacing={0.25}>
-                        <Typography variant="subtitle2" fontWeight={600}>
-                          {invoice.client.name || 'No client name'}
-                        </Typography>
-                        <Stack direction="row" spacing={1.5} alignItems="center">
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(invoice.savedAt)}
-                          </Typography>
-                          <Typography variant="caption" color="text.disabled">•</Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {invoice.items.length} item{invoice.items.length !== 1 ? 's' : ''}
-                          </Typography>
-                        </Stack>
-                      </Stack>
-                    </Stack>
-                    
-                    <Tooltip title="Delete">
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleDeleteInvoice(invoice.id, e)}
-                        sx={{
-                          color: 'grey.400',
-                          '&:hover': {
-                            color: 'error.main',
-                            backgroundColor: 'error.50',
-                          },
-                        }}
-                      >
-                        <DeleteOutlineIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                </Paper>
-              ))}
+                  {history.length} / 20
+                </Typography>
+              </Stack>
+              <IconButton onClick={() => setIsHistoryOpen(false)} sx={{ minWidth: 44, minHeight: 44 }}>
+                <CloseIcon />
+              </IconButton>
             </Stack>
-          )}
-        </DialogContent>
-      </Dialog>
+            
+            <Box sx={{ maxHeight: '60vh', overflowY: 'auto', mx: -1, px: 1 }}>
+              <HistoryContent />
+            </Box>
+          </Box>
+        </SwipeableDrawer>
+      ) : (
+        <Dialog
+          open={isHistoryOpen}
+          onClose={() => setIsHistoryOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          TransitionComponent={Fade}
+          PaperProps={{
+            sx: {
+              borderRadius: 3,
+              maxHeight: '80vh',
+            }
+          }}
+        >
+          <DialogTitle sx={{ 
+            pb: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <Stack direction="row" alignItems="center" spacing={1.5}>
+              <HistoryIcon color="primary" />
+              <Typography variant="h6" fontWeight={600}>
+                Saved Invoices
+              </Typography>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  backgroundColor: 'grey.100', 
+                  px: 1.5, 
+                  py: 0.5, 
+                  borderRadius: 2,
+                  fontWeight: 600,
+                  color: 'grey.600',
+                }}
+              >
+                {history.length} / 20
+              </Typography>
+            </Stack>
+            <IconButton onClick={() => setIsHistoryOpen(false)} size="small">
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          
+          <DialogContent sx={{ pt: 1 }}>
+            <HistoryContent />
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Snackbar for notifications */}
+      {/* Snackbar for notifications - positioned above bottom bar on mobile */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        sx={{
+          // Position above the bottom bar on mobile
+          bottom: { xs: 100, md: 24 },
+        }}
       >
         <Alert 
           onClose={handleCloseSnackbar} 
