@@ -56,81 +56,58 @@ function InvoiceItemsTable({
     >
       <Stack spacing={2}>
         {/* Description */}
-        {isGeneratingPDF ? (
-          <Typography variant="body1" fontWeight={500}>{item.description}</Typography>
-        ) : (
-          <TextField
-            fullWidth
-            value={item.description}
-            onChange={(e) => onItemChange(item.id, 'description', e.target.value)}
-            size="small"
-            placeholder="Item description"
-            label="Description"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: 'white',
-              }
-            }}
-          />
-        )}
+        <TextField
+          fullWidth
+          value={item.description}
+          onChange={(e) => onItemChange(item.id, 'description', e.target.value)}
+          size="small"
+          placeholder="Item description"
+          label="Description"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: 'white',
+            }
+          }}
+        />
 
         {/* Quantity, Price, Discount in a row */}
         <Stack direction="row" spacing={1.5}>
-          {isGeneratingPDF ? (
-            <>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" color="text.secondary">Qty</Typography>
-                <Typography variant="body2">{item.quantity}</Typography>
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" color="text.secondary">Price</Typography>
-                <Typography variant="body2">${item.unitPrice.toFixed(2)}</Typography>
-              </Box>
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="caption" color="text.secondary">Disc.</Typography>
-                <Typography variant="body2">${item.discount.toFixed(2)}</Typography>
-              </Box>
-            </>
-          ) : (
-            <>
-              <TextField
-                type="number"
-                value={item.quantity}
-                onChange={(e) => onItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                size="small"
-                label="Qty"
-                sx={{ 
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
-                }}
-                inputProps={{ min: 0, step: 1, inputMode: 'numeric' }}
-              />
-              <TextField
-                type="number"
-                value={item.unitPrice}
-                onChange={(e) => onItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
-                size="small"
-                label="Price"
-                sx={{ 
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
-                }}
-                inputProps={{ min: 0, step: 0.01, inputMode: 'decimal' }}
-              />
-              <TextField
-                type="number"
-                value={item.discount}
-                onChange={(e) => onItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
-                size="small"
-                label="Disc."
-                sx={{ 
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
-                }}
-                inputProps={{ min: 0, step: 0.01, inputMode: 'decimal' }}
-              />
-            </>
-          )}
+          <TextField
+            type="number"
+            value={item.quantity}
+            onChange={(e) => onItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+            size="small"
+            label="Qty"
+            sx={{ 
+              flex: 1,
+              '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
+            }}
+            inputProps={{ min: 0, step: 1, inputMode: 'numeric' }}
+          />
+          <TextField
+            type="number"
+            value={item.unitPrice}
+            onChange={(e) => onItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+            size="small"
+            label="Price"
+            sx={{ 
+              flex: 1,
+              '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
+            }}
+            inputProps={{ min: 0, step: 0.01, inputMode: 'decimal' }}
+          />
+          <TextField
+            type="number"
+            value={item.discount}
+            onChange={(e) => onItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
+            size="small"
+            label="Disc."
+            sx={{ 
+              flex: 1,
+              '& .MuiOutlinedInput-root': { backgroundColor: 'white' }
+            }}
+            inputProps={{ min: 0, step: 0.01, inputMode: 'decimal' }}
+          />
         </Stack>
 
         {/* Amount and Delete button */}
@@ -141,26 +118,24 @@ function InvoiceItemsTable({
               ${calculateItemAmount(item).toFixed(2)}
             </Typography>
           </Box>
-          {!isGeneratingPDF && (
-            <IconButton
-              color="error"
-              onClick={() => onRemoveItem(item.id)}
-              disabled={items.length === 1}
-              sx={{
-                minWidth: 44,
-                minHeight: 44,
-                backgroundColor: 'error.50',
-                '&:hover': {
-                  backgroundColor: 'error.100',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'grey.100',
-                }
-              }}
-            >
-              <DeleteIcon />
-            </IconButton>
-          )}
+          <IconButton
+            color="error"
+            onClick={() => onRemoveItem(item.id)}
+            disabled={items.length === 1}
+            sx={{
+              minWidth: 44,
+              minHeight: 44,
+              backgroundColor: 'error.50',
+              '&:hover': {
+                backgroundColor: 'error.100',
+              },
+              '&.Mui-disabled': {
+                backgroundColor: 'grey.100',
+              }
+            }}
+          >
+            <DeleteIcon />
+          </IconButton>
         </Stack>
       </Stack>
     </Paper>
@@ -172,7 +147,7 @@ function InvoiceItemsTable({
         Items & Services
       </Typography>
 
-      {/* Mobile: Card-based layout */}
+      {/* Mobile: Card-based layout, Desktop/PDF: Table layout */}
       {isMobile && !isGeneratingPDF ? (
         <Box sx={{ mt: 2 }}>
           {items.map((item) => (
@@ -180,25 +155,25 @@ function InvoiceItemsTable({
           ))}
         </Box>
       ) : (
-        /* Desktop: Table layout (also used for PDF generation) */
+        /* Desktop/PDF: Table layout */
         <TableContainer sx={{ marginTop: 2, border: '1px solid #e0e0e0', borderRadius: 1, overflowX: 'auto' }}>
-          <Table>
+          <Table sx={{ minWidth: 500 }}>
             <TableHead>
               <TableRow sx={{ backgroundColor: '#f5f7fa' }}>
-                <TableCell sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Description</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Qty</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Price</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Disc.</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Amount</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 180 }}>Description</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 70 }}>Qty</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 90 }}>Price</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 80 }}>Disc.</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 90 }}>Amount</TableCell>
                 {!isGeneratingPDF && (
-                  <TableCell align="center" sx={{ fontWeight: 700, color: 'text.primary', fontSize: { xs: '0.75rem', sm: '0.875rem' }, padding: { xs: '8px 4px', sm: '16px' } }}>Action</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 700, color: 'text.primary', fontSize: '0.875rem', padding: '12px 16px', minWidth: 60 }}>Action</TableCell>
                 )}
               </TableRow>
             </TableHead>
             <TableBody>
               {items.map((item) => (
                 <TableRow key={item.id}>
-                  <TableCell sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                  <TableCell sx={{ padding: '12px 16px' }}>
                     {isGeneratingPDF ? (
                       <Typography variant="body2">{item.description}</Typography>
                     ) : (
@@ -211,55 +186,55 @@ function InvoiceItemsTable({
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                  <TableCell align="right" sx={{ padding: '12px 16px' }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{item.quantity}</Typography>
+                      <Typography variant="body2">{item.quantity}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.quantity}
                         onChange={(e) => onItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: { xs: 60, sm: 80 } }}
+                        sx={{ width: 80 }}
                         inputProps={{ min: 0, step: 1 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                  <TableCell align="right" sx={{ padding: '12px 16px' }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>${item.unitPrice.toFixed(2)}</Typography>
+                      <Typography variant="body2">${item.unitPrice.toFixed(2)}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.unitPrice}
                         onChange={(e) => onItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: { xs: 70, sm: 100 } }}
+                        sx={{ width: 100 }}
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                  <TableCell align="right" sx={{ padding: '12px 16px' }}>
                     {isGeneratingPDF ? (
-                      <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>${item.discount.toFixed(2)}</Typography>
+                      <Typography variant="body2">${item.discount.toFixed(2)}</Typography>
                     ) : (
                       <TextField
                         type="number"
                         value={item.discount}
                         onChange={(e) => onItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
                         size="small"
-                        sx={{ width: { xs: 70, sm: 100 } }}
+                        sx={{ width: 100 }}
                         inputProps={{ min: 0, step: 0.01 }}
                       />
                     )}
                   </TableCell>
-                  <TableCell align="right" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
-                    <Typography variant="body2" fontWeight="600" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, color: primaryColor }}>
+                  <TableCell align="right" sx={{ padding: '12px 16px' }}>
+                    <Typography variant="body2" fontWeight="600" sx={{ color: primaryColor }}>
                       ${calculateItemAmount(item).toFixed(2)}
                     </Typography>
                   </TableCell>
                   {!isGeneratingPDF && (
-                    <TableCell align="center" sx={{ padding: { xs: '8px 4px', sm: '16px' } }}>
+                    <TableCell align="center" sx={{ padding: '12px 16px' }}>
                       <IconButton
                         size="small"
                         color="error"

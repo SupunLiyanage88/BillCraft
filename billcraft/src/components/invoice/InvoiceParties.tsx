@@ -10,8 +10,8 @@ interface InvoicePartiesProps {
 
 function InvoiceParties({ seller, client, isGeneratingPDF, onClientUpdate }: InvoicePartiesProps) {
   return (
-    <Stack direction={{ xs: 'column', md: 'row' }} spacing={{ xs: 2, md: 4 }}>
-      <Box sx={{ flex: 1, padding: { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
+    <Stack direction={isGeneratingPDF ? 'row' : { xs: 'column', md: 'row' }} spacing={isGeneratingPDF ? 4 : { xs: 2, md: 4 }}>
+      <Box sx={{ flex: 1, padding: isGeneratingPDF ? 2 : { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
         <Typography variant="overline" fontWeight="700" color="primary.main" gutterBottom>
           FROM
         </Typography>
@@ -38,7 +38,7 @@ function InvoiceParties({ seller, client, isGeneratingPDF, onClientUpdate }: Inv
         )}
       </Box>
 
-      <Box sx={{ flex: 1, padding: { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
+      <Box sx={{ flex: 1, padding: isGeneratingPDF ? 2 : { xs: 1.5, sm: 2 }, backgroundColor: '#f8f9fc', borderRadius: 2 }}>
         <Typography variant="overline" fontWeight="700" color="primary.main" gutterBottom>
           BILL TO
         </Typography>

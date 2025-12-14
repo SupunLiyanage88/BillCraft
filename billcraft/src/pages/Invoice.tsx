@@ -20,6 +20,7 @@ import {
   SwipeableDrawer,
   Fab,
   Collapse,
+  CircularProgress,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import PrintIcon from '@mui/icons-material/Print';
@@ -309,6 +310,36 @@ function Invoice() {
       
       pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
       pdf.save(`Invoice-${invoiceHeaderData.invoiceNumber}.pdf`);
+      
+      // Auto-save invoice to history after download
+      try {
+        const savedInvoice: SavedInvoice = {
+          id: `${Date.now()}-${invoiceHeaderData.invoiceNumber}`,
+          savedAt: new Date().toISOString(),
+          invoiceHeader: invoiceHeaderData,
+          seller: sellerDetails,
+          client: clientDetails,
+          items: items,
+          taxInfo: taxInfo,
+          currency: currency,
+          bankDetails: bankDetails,
+          logo: logo,
+        };
+        
+        saveInvoiceToHistory(savedInvoice);
+        
+        // Increment and set next invoice number for new invoices
+        const nextNumber = incrementInvoiceNumber();
+        setInvoiceHeaderData(prev => ({
+          ...prev,
+          invoiceNumber: nextNumber.toString().padStart(3, '0'),
+        }));
+        
+        setSnackbar({ open: true, message: 'Invoice downloaded & saved!', severity: 'success' });
+      } catch (saveError) {
+        console.error('Error auto-saving invoice:', saveError);
+        setSnackbar({ open: true, message: 'Invoice downloaded (save failed)', severity: 'success' });
+      }
       
       setIsGeneratingPDF(false);
     } catch (error) {
@@ -980,8 +1011,36 @@ function Invoice() {
         </Box>
       </Paper>
 
+      {/* Loading Overlay during PDF generation */}
+      {isGeneratingPDF && (
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 2,
+          }}
+        >
+          <CircularProgress size={48} thickness={4} />
+          <Typography variant="h6" fontWeight={600} color="primary">
+            Generating Invoice...
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Please wait while we prepare your PDF
+          </Typography>
+        </Box>
+      )}
+
       {/* Main Content Area */}
-      <Box sx={{ px: { xs: 1.5, sm: 3, md: 4 }, pt: { xs: 2, md: 4 } }}>
+      <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pt: { xs: 2, md: 4 } }}>
         <Box sx={{ maxWidth: 1100, mx: 'auto' }}>
           {/* Invoice Document */}
           <Paper 
@@ -994,6 +1053,10 @@ function Invoice() {
               border: '1px solid',
               borderColor: 'grey.200',
               boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+              // Scale up to desktop size only during PDF generation
+              ...(isGeneratingPDF && {
+                minWidth: 800,
+              }),
             }}
           >
             <InvoiceHeader 
@@ -1039,7 +1102,7 @@ function Invoice() {
 
             <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
-            <PaymentInfo bankDetails={bankDetails} />
+            <PaymentInfo bankDetails={bankDetails} isGeneratingPDF={isGeneratingPDF} />
 
             <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />
 
@@ -1050,6 +1113,7 @@ function Invoice() {
               email={sellerDetails.email}
               authorizedPerson={sellerDetails.authorizedPerson}
               primaryColor={primaryColor}
+              isGeneratingPDF={isGeneratingPDF}
             />
           </Paper>
         </Box>
