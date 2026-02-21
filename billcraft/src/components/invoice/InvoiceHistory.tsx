@@ -13,7 +13,7 @@ import {
 import DeleteIcon from '@mui/icons-material/Delete';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import { getInvoiceHistory, deleteInvoiceFromHistory } from '../../utils/localStorage';
+import { getInvoiceHistory, deleteInvoiceFromHistory } from '../../utils/api';
 import type { SavedInvoice } from '../../types/invoice';
 
 interface InvoiceHistoryProps {
@@ -28,16 +28,16 @@ function InvoiceHistory({ open, onLoadInvoice }: InvoiceHistoryProps) {
     loadHistory();
   }, [open]);
 
-  const loadHistory = () => {
-    const invoices = getInvoiceHistory();
+  const loadHistory = async () => {
+    const invoices = await getInvoiceHistory();
     setHistory(invoices);
   };
 
-  const handleDelete = (id: string, event: React.MouseEvent) => {
+  const handleDelete = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      deleteInvoiceFromHistory(id);
-      loadHistory();
+      await deleteInvoiceFromHistory(id);
+      await loadHistory();
     } catch (error) {
       console.error('Error deleting invoice:', error);
     }
@@ -101,7 +101,7 @@ function InvoiceHistory({ open, onLoadInvoice }: InvoiceHistoryProps) {
         </Stack>
         <Stack direction="row" alignItems="center" spacing={1}>
           <Chip
-            label={`${history.length} / 20`}
+            label={`${history.length}`}
             size="small"
             sx={{
               fontWeight: 600,

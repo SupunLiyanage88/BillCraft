@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -45,7 +45,7 @@ import InvoiceItemsTable from '../components/invoice/InvoiceItemsTable';
 import InvoiceSummary from '../components/invoice/InvoiceSummary';
 import PaymentInfo from '../components/invoice/PaymentInfo';
 import InvoiceFooter from '../components/invoice/InvoiceFooter';
-import { saveInvoiceToHistory, getInvoiceHistory, deleteInvoiceFromHistory, getNextInvoiceNumber, incrementInvoiceNumber } from '../utils/localStorage';
+import { saveInvoiceToHistory, getInvoiceHistory, deleteInvoiceFromHistory, getNextInvoiceNumber, incrementInvoiceNumber, migrateFromLocalStorage } from '../utils/api';
 import type { 
   InvoiceItem, 
   InvoiceHeaderData, 
@@ -101,16 +101,26 @@ function Invoice() {
   ];
 
   // Invoice Header
-  const [invoiceHeaderData, setInvoiceHeaderData] = useState<InvoiceHeaderData>(() => {
-    const nextNumber = getNextInvoiceNumber();
-    return {
-      invoiceNumber: nextNumber.toString().padStart(3, '0'),
-      issueDate: new Date().toISOString().split('T')[0],
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      paymentMethod: 'Bank Transfer',
-      isTaxInvoice: true,
-    };
+  const [invoiceHeaderData, setInvoiceHeaderData] = useState<InvoiceHeaderData>({
+    invoiceNumber: '001',
+    issueDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    paymentMethod: 'Bank Transfer',
+    isTaxInvoice: true,
   });
+
+  // Fetch invoice number from cloud on mount (after migration)
+  useEffect(() => {
+    const init = async () => {
+      await migrateFromLocalStorage();
+      const nextNumber = await getNextInvoiceNumber();
+      setInvoiceHeaderData(prev => ({
+        ...prev,
+        invoiceNumber: nextNumber.toString().padStart(3, '0'),
+      }));
+    };
+    init();
+  }, []);
 
   // Seller Details
   const sellerDetails: SellerDetails = {
@@ -369,11 +379,11 @@ function Invoice() {
           bankDetails: bankDetails,
           logo: logo,
         };
-        
-        saveInvoiceToHistory(savedInvoice);
-        
+
+        await saveInvoiceToHistory(savedInvoice);
+
         // Increment and set next invoice number for new invoices
-        const nextNumber = incrementInvoiceNumber();
+        const nextNumber = await incrementInvoiceNumber();
         setInvoiceHeaderData(prev => ({
           ...prev,
           invoiceNumber: nextNumber.toString().padStart(3, '0'),
@@ -439,7 +449,7 @@ function Invoice() {
   };
 
   // Handle save to history
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     try {
       const savedInvoice: SavedInvoice = {
         id: `${Date.now()}-${invoiceHeaderData.invoiceNumber}`,
@@ -453,11 +463,11 @@ function Invoice() {
         bankDetails: bankDetails,
         logo: logo,
       };
-      
-      saveInvoiceToHistory(savedInvoice);
-      
+
+      await saveInvoiceToHistory(savedInvoice);
+
       // Increment and set next invoice number for new invoices
-      const nextNumber = incrementInvoiceNumber();
+      const nextNumber = await incrementInvoiceNumber();
       setInvoiceHeaderData(prev => ({
         ...prev,
         invoiceNumber: nextNumber.toString().padStart(3, '0'),
@@ -482,11 +492,11 @@ function Invoice() {
   };
 
   // Handle delete from history
-  const handleDeleteInvoice = (id: string, event: React.MouseEvent) => {
+  const handleDeleteInvoice = async (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
     try {
-      deleteInvoiceFromHistory(id);
-      loadHistory();
+      await deleteInvoiceFromHistory(id);
+      await loadHistory();
       setSnackbar({ open: true, message: 'Invoice deleted', severity: 'success' });
     } catch (error) {
       console.error('Error deleting invoice:', error);
@@ -494,8 +504,8 @@ function Invoice() {
   };
 
   // Load history
-  const loadHistory = () => {
-    const invoices = getInvoiceHistory();
+  const loadHistory = async () => {
+    const invoices = await getInvoiceHistory();
     setHistory(invoices);
   };
 
@@ -1323,14 +1333,14 @@ function Invoice() {
                     color: 'grey.600',
                   }}
                 >
-                  {history.length} / 20
+                  {history.length}
                 </Typography>
               </Stack>
               <IconButton onClick={() => setIsHistoryOpen(false)} sx={{ minWidth: 44, minHeight: 44 }}>
                 <CloseIcon />
               </IconButton>
             </Stack>
-            
+
             <Box sx={{ maxHeight: '60vh', overflowY: 'auto', mx: -1, px: 1 }}>
               <HistoryContent />
             </Box>
@@ -1372,14 +1382,14 @@ function Invoice() {
                   color: 'grey.600',
                 }}
               >
-                {history.length} / 20
+                {history.length}
               </Typography>
             </Stack>
             <IconButton onClick={() => setIsHistoryOpen(false)} size="small">
               <CloseIcon />
             </IconButton>
           </DialogTitle>
-          
+
           <DialogContent sx={{ pt: 1 }}>
             <HistoryContent />
           </DialogContent>
