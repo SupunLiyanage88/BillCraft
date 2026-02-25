@@ -140,9 +140,10 @@ function Invoice() {
   ]);
 
   // Tax & Total
+  const [includeTax, setIncludeTax] = useState(true);
   const taxInfo: TaxInfo = {
     taxName: 'GST',
-    taxPercentage: 10,
+    taxPercentage: includeTax ? 10 : 0,
   };
   const [currency, setCurrency] = useState('AUD');
 
@@ -1157,6 +1158,8 @@ function Invoice() {
               isGeneratingPDF={isGeneratingPDF}
               onCurrencyChange={setCurrency}
               primaryColor={primaryColor}
+              includeTax={includeTax}
+              onToggleTax={setIncludeTax}
             />
 
             <Divider sx={{ my: { xs: 2.5, md: 4 }, borderColor: 'grey.200' }} />

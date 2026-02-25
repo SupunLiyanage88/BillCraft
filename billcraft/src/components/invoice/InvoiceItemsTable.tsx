@@ -76,6 +76,10 @@ function InvoiceItemsTable({
             type="number"
             value={item.quantity}
             onChange={(e) => onItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+            onFocus={(e) => {
+              if (item.quantity === 0) e.target.value = '';
+              else e.target.select();
+            }}
             size="small"
             label="Qty"
             sx={{ 
@@ -88,6 +92,10 @@ function InvoiceItemsTable({
             type="number"
             value={item.unitPrice}
             onChange={(e) => onItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+            onFocus={(e) => {
+              if (item.unitPrice === 0) e.target.value = '';
+              else e.target.select();
+            }}
             size="small"
             label="Price"
             sx={{ 
@@ -100,6 +108,10 @@ function InvoiceItemsTable({
             type="number"
             value={item.discount}
             onChange={(e) => onItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
+            onFocus={(e) => {
+              if (item.discount === 0) e.target.value = '';
+              else e.target.select();
+            }}
             size="small"
             label="Disc."
             sx={{ 
@@ -194,6 +206,10 @@ function InvoiceItemsTable({
                         type="number"
                         value={item.quantity}
                         onChange={(e) => onItemChange(item.id, 'quantity', parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => {
+                          if (item.quantity === 0) e.target.value = '';
+                          else e.target.select();
+                        }}
                         size="small"
                         sx={{ width: 80 }}
                         inputProps={{ min: 0, step: 1 }}
@@ -208,6 +224,10 @@ function InvoiceItemsTable({
                         type="number"
                         value={item.unitPrice}
                         onChange={(e) => onItemChange(item.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => {
+                          if (item.unitPrice === 0) e.target.value = '';
+                          else e.target.select();
+                        }}
                         size="small"
                         sx={{ width: 100 }}
                         inputProps={{ min: 0, step: 0.01 }}
@@ -222,6 +242,10 @@ function InvoiceItemsTable({
                         type="number"
                         value={item.discount}
                         onChange={(e) => onItemChange(item.id, 'discount', parseFloat(e.target.value) || 0)}
+                        onFocus={(e) => {
+                          if (item.discount === 0) e.target.value = '';
+                          else e.target.select();
+                        }}
                         size="small"
                         sx={{ width: 100 }}
                         inputProps={{ min: 0, step: 0.01 }}
